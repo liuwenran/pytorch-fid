@@ -52,6 +52,9 @@ except ImportError:
 
 
 from pytorch_fid.inception import InceptionV3
+from datetime import datetime
+from pathlib import Path
+import json
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument("--batch-size", type=int, default=50, help="Batch size to use")
@@ -85,10 +88,17 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
-    "path",
+    "--path",
     type=str,
     nargs=2,
+    default=[],
     help=("Paths to the generated images or " "to .npz statistic files"),
+)
+
+parser.add_argument(
+    '--dataset_name',
+    type=str,
+    default='exp',
 )
 
 IMAGE_EXTENSIONS = {"bmp", "jpg", "jpeg", "pgm", "png", "ppm", "tif", "tiff", "webp"}
@@ -143,7 +153,17 @@ def get_activations(
         )
         batch_size = len(files)
 
-    dataset = ImagePathDataset(files, transforms=TF.ToTensor())
+    transform = TF.Compose(
+        [
+            TF.Resize(
+                (768, 768),
+                interpolation=TF.InterpolationMode.BILINEAR,
+            ),
+            TF.ToTensor(),
+        ]
+    )
+
+    dataset = ImagePathDataset(files, transforms=transform)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
@@ -269,7 +289,7 @@ def compute_statistics_of_path(path, model, batch_size, dims, device, num_worker
     else:
         path = pathlib.Path(path)
         files = sorted(
-            [file for ext in IMAGE_EXTENSIONS for file in path.glob("*.{}".format(ext))]
+            [file for ext in IMAGE_EXTENSIONS for file in path.rglob("*.{}".format(ext))]
         )
         m, s = calculate_activation_statistics(
             files, model, batch_size, dims, device, num_workers
@@ -323,6 +343,89 @@ def save_fid_stats(paths, batch_size, device, dims, num_workers=1):
 def main():
     args = parser.parse_args()
 
+    tiktok_gt_video_dir = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/tiktok_test-frames'
+    pexels_h_gt_video_dir = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/pexels-test-h-frames'
+    pexels_v_gt_video_dir = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/pexels-test-v-frames'
+
+    # moore results
+    # dataset_name = 'moore_tiktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/moore/2113--video_tiktok--seed_42-768x768'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'moore_pexels-test-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/moore/2056--video_pexels-h--seed_42-768x768'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    # dataset_name = 'moore_pexels-test-v'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/moore/2112--video_pexels-v--seed_42-768x768'
+    # gt_video_root_path = pexels_v_gt_video_dir
+
+
+    # magic animate result
+    # dataset_name = 'magic-animate_tiktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/magic-animate/tiktok--2024-06-05T16-33-58'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'magic-animate_pexels-test-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/magic-animate/pexels-h--2024-06-05T16-39-26'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    # dataset_name = 'magic-animate_pexels-test-v'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/magic-animate/pexels-v--2024-06-05T16-57-53'
+    # gt_video_root_path = pexels_v_gt_video_dir
+
+    # champ result
+    # dataset_name = 'champ_tiktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/champ/tiktok-2024-06-05T12-05-19'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'champ_pexels-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/champ/pexels-h-2024-06-05T19-08-03'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    # dataset_name = 'champ_pexels-v'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/champ/pexels-v-2024-06-05T21-58-38'
+    # gt_video_root_path = pexels_v_gt_video_dir
+
+    # dataset_name = 'ours_ckpt1_tiktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2143--ckpt1-tiktok'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'ours_ckpt1_pexels-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2153--ckpt1-pexels-h'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    # dataset_name = 'ours_ckpt1_pexels-v'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2157--ckpt1-pexels-v'
+    # gt_video_root_path = pexels_v_gt_video_dir
+
+    # dataset_name = 'ours_ckpt2_tioktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2202--ckpt2-tiktok'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'ours_ckpt2_pexels-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2203--ckpt2-pexels-h'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    # dataset_name = 'ours_ckpt2_pexels-v'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2202--ckpt2-pexels-v'
+    # gt_video_root_path = pexels_v_gt_video_dir
+
+    # dataset_name = 'ours_ckpt3_tioktok'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2203--ckpt3-tiktok'
+    # gt_video_root_path = tiktok_gt_video_dir
+
+    # dataset_name = 'ours_ckpt3_pexels-h'
+    # res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2204--ckpt3-pexels-h'
+    # gt_video_root_path = pexels_h_gt_video_dir
+
+    dataset_name = 'ours_ckpt3_pexels-v'
+    res_video_root_path = '/mnt/hwfile/mm_lol/liuwenran/pexels-test-case/algorithms_result_frames/ours/20240605-2203--ckpt3-pexels-v'
+    gt_video_root_path = pexels_v_gt_video_dir
+
+    args.path = [res_video_root_path, gt_video_root_path]
+    args.dataset_name = dataset_name
+
     if args.device is None:
         device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
     else:
@@ -350,6 +453,13 @@ def main():
     )
     print("FID: ", fid_value)
 
+    date_str = datetime.now().strftime("%Y%m%d")
+    time_str = datetime.now().strftime("%H%M")
+    save_dir = Path(f"/mnt/petrelfs/liuwenran/repos/pytorch-fid/output/{date_str}-{time_str}_{dataset_name}")
+    save_dir.mkdir(exist_ok=True, parents=True)
+    result_dict = {"FID": fid_value}
+    with open(os.path.join(save_dir, "results.json"), 'w') as fp:
+        json.dump(result_dict, fp, indent=True)
 
 if __name__ == "__main__":
     main()
